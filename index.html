@@ -41,11 +41,12 @@ dl{margin:8px 0}dt{font-size:12px;color:#666}dd{margin:0 0 6px;font-weight:600}
 .bl h3{font:600 14px Georgia,serif;color:var(--wood2);margin:0 0 6px}
 .g{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
 .imgs{display:flex;justify-content:center;align-items:flex-start}
-.img-box{--mh:260px;max-width:100%;text-align:center}
-.img-box img{display:block;max-width:100%;max-height:var(--mh);width:auto;height:auto;margin:0 auto;object-fit:contain;border:1px solid var(--line);border-radius:4px;background:#faf8f5}
-.img-box.sz-m{--mh:390px}
-.img-box.sz-l{--mh:520px}
-.img-box.sz-x{--mh:700px}
+.img-box{width:100%;max-width:var(--mw,100%);text-align:center}
+.img-box img{display:block;max-width:100%;max-height:var(--mh,300px);width:auto;height:auto;margin:0 auto;object-fit:contain;border:1px solid var(--line);border-radius:4px;background:#faf8f5}
+.img-box.sz-s{--mw:260px;--mh:260px}
+.img-box.sz-m{--mw:390px;--mh:390px}
+.img-box.sz-l{--mw:520px;--mh:520px}
+.img-box.sz-x{--mw:700px;--mh:700px}
 .doc ul{margin:0;padding:0;list-style:none}.doc li{padding:1px 0 1px 18px;position:relative}
 .doc li::before{content:"✓";position:absolute;left:0;color:var(--wood2)}
 .row{display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-bottom:1px dotted var(--line)}
@@ -58,7 +59,14 @@ dl{margin:8px 0}dt{font-size:12px;color:#666}dd{margin:0 0 6px;font-weight:600}
 #cropWrap{position:relative;display:inline-block;max-width:100%;touch-action:none;user-select:none;margin:8px 0}
 #cropImg{display:block;max-width:100%;max-height:60vh;cursor:crosshair;-webkit-user-drag:none;user-select:none;border:1px solid var(--line);border-radius:4px;background:#faf8f5}
 #cropSel{position:absolute;border:2px dashed #b9885c;background:rgba(185,136,92,.2);display:none;pointer-events:none;box-sizing:border-box;border-radius:2px}
-@media print{.doc .img-box{--mh:170px}.doc .img-box.sz-m{--mh:255px}.doc .img-box.sz-l{--mh:340px}.doc .img-box.sz-x{--mh:450px}.bl{padding:8px 20px}.sg{padding-top:24px}body{background:#fff}.ui,.bar,#toast{display:none!important}.app{display:block;padding:0}.doc{border:0;max-width:none}@page{size:A4;margin:10mm}}
+@media print{
+  .doc .img-box{--mw:340px;--mh:340px}
+  .doc .img-box.sz-s{--mw:170px;--mh:170px}
+  .doc .img-box.sz-m{--mw:255px;--mh:255px}
+  .doc .img-box.sz-l{--mw:340px;--mh:340px}
+  .doc .img-box.sz-x{--mw:450px;--mh:450px}
+  .bl{padding:8px 20px}.sg{padding-top:24px}body{background:#fff}.ui,.bar,#toast{display:none!important}.app{display:block;padding:0}.doc{border:0;max-width:none}@page{size:A4;margin:10mm}
+}
 </style></head><body>
 <div class="bar ui"><b>MUEBLES MARTÍNEZ</b>
 <button id="bSave">Guardar</button><button id="bCopy">Copiar texto</button><button id="bPdf" class="p">Exportar PDF</button><button id="bNew">Nueva</button></div>
@@ -72,7 +80,7 @@ dl{margin:8px 0}dt{font-size:12px;color:#666}dd{margin:0 0 6px;font-weight:600}
 <section><h2>Muebles</h2>
 <label style="display:flex;gap:8px;align-items:center"><input id="multi" type="checkbox" style="width:auto;margin:0">Cotizar varios muebles</label>
 <div id="mlist"></div><button id="bAdd" hidden style="margin-top:8px">+ Agregar otro mueble</button>
-<label>Render o foto<input id="img" type="file" accept="image/*"></label>
+<label>Imagen ilustrativa (render o foto)<input id="img" type="file" accept="image/*"></label>
 <div id="imgTools" hidden>
   <div class="r2" style="margin-top:8px">
     <label style="margin:0">Tamaño<select id="imgSize">
@@ -83,7 +91,7 @@ dl{margin:8px 0}dt{font-size:12px;color:#666}dd{margin:0 0 6px;font-weight:600}
     </select></label>
     <button id="bCropImg" type="button" style="align-self:end">✂️ Recortar</button>
   </div>
-  <button id="bImg" style="margin-top:8px">Quitar render</button>
+  <button id="bImg" style="margin-top:8px">Quitar imagen</button>
 </div>
 <label>Despiece del mueble<input id="imgDespiece" type="file" accept="image/*"></label>
 <div id="despieceTools" hidden>
@@ -186,7 +194,7 @@ const mb=d.muebles.map((m,i)=>'<div class="bl"><h3>'+(N>1?(i+1)+'. ':'')+esc(m.t
 return'<div class="dh"><div class="wm">MUEBLES MARTÍNEZ<small>CALIDAD · DISEÑO · PERSONALIZACIÓN</small></div><div class="meta"><b>Folio: '+esc(cur.folio||'se asigna al guardar')+'</b><br>Fecha: '+(ok?fdate(d.fecha):'—')+'<br>Vigencia: '+(ok&&Number.isInteger(v)&&v>0?'hasta el '+fdate(d.fecha,v):'—')+'</div></div>'
 +'<div class="ti">Cotización – '+esc([...new Set(d.muebles.map(m=>m.t))].join(', '))+'</div>'
 +'<div class="bl"><h3>Cliente</h3><div>'+esc(d.cli.trim()||'—')+'</div>'+(d.tel.trim()?'<div>Tel. '+esc(d.tel.trim())+'</div>':'')+(d.dir.trim()?'<div>'+esc(d.dir.trim())+'</div>':'')+'</div>'
-+(cur.img?imgBlock(cur.img,'Render del proyecto','Render',cur.imgSize):'')
++(cur.img?imgBlock(cur.img,'Imagen ilustrativa del proyecto','Imagen ilustrativa',cur.imgSize):'')
 +mb
 +(list(d.herr).length?'<div class="bl"><h3>Herrajes incluidos</h3><ul>'+li(d.herr)+'</ul></div>':'')
 +'<div class="bl"><h3>Tiempo estimado</h3>'+(Number.isInteger(dd)&&dd>0?dd+' días hábiles de fabricación e instalación':'—')+'</div>'
@@ -214,10 +222,10 @@ let ok=ls.set(K,a),lost=false;if(!ok&&(r.img||r.despiece)){r.img='';r.despiece='
 if(!ok){toast('No se pudo guardar en este navegador. Exporta el PDF de todos modos.')}
 render();hist();draft();return ok&&!lost}
 function check(){shown=true;const e=validate(get());render();if(e.length){toast('Corrige '+e.length+' dato(s) marcados.');const f=$(e[0][0]);f.scrollIntoView({block:'center'});f.focus();return false}return true}
+const sizeLabel=s=>({s:'Pequeña',m:'Mediana',l:'Grande',x:'Muy grande'})[normSize(s)]||'Grande';
 function sumHtml(d){const t=num(d.total),w=[];if(t<3000)w.push('El total parece bajo. ¿Faltan ceros?');if(t>1000000)w.push('El total parece alto. ¿Sobran ceros?');
 const sd=d.muebles.map(m=>esc(m.t)+' — '+esc(m.m.trim())).join('<br>');
-return'<dl><dt>Cliente</dt><dd>'+esc(d.cli)+'</dd><dt>Proyecto</dt><dd>'+sd+'</dd><dt>Inversión total</dt><dd style="font-size:22px">'+mx(t)+' MXN ('+(d.iva==='mas'?'más IVA':'IVA incluido')+')</dd><dt>Pago</dt><dd>'+esc(pay(d))+'</dd><dt>Entrega</dt><dd>'+num(d.dias)+' días hábiles</dd>'+(cur.img?'<dt>Render</dt><dd>Sí ('+sizeLabel(cur.imgSize)+')</dd>':'')+(cur.despiece?'<dt>Despiece</dt><dd>Sí ('+sizeLabel(cur.despieceSize)+')</dd>':'')+'</dl>'+w.map(x=>'<div class="warn">'+x+'</div>').join('')}
-const sizeLabel=s=>({s:'Pequeña',m:'Mediana',l:'Grande',x:'Muy grande'})[normSize(s)]||'Grande';
+return'<dl><dt>Cliente</dt><dd>'+esc(d.cli)+'</dd><dt>Proyecto</dt><dd>'+sd+'</dd><dt>Inversión total</dt><dd style="font-size:22px">'+mx(t)+' MXN ('+(d.iva==='mas'?'más IVA':'IVA incluido')+')</dd><dt>Pago</dt><dd>'+esc(pay(d))+'</dd><dt>Entrega</dt><dd>'+num(d.dias)+' días hábiles</dd>'+(cur.img?'<dt>Imagen ilustrativa</dt><dd>Sí ('+sizeLabel(cur.imgSize)+')</dd>':'')+(cur.despiece?'<dt>Despiece</dt><dd>Sí ('+sizeLabel(cur.despieceSize)+')</dd>':'')+'</dl>'+w.map(x=>'<div class="warn">'+x+'</div>').join('')}
 function doPrint(){const d=get();save();const old=document.title;document.title=(cur.folio||'Cotizacion')+' '+d.cli.trim().replace(/[\\/:*?"<>|]/g,'');window.onafterprint=()=>{document.title=old};window.print();setTimeout(()=>{document.title=old},4000)}
 $('bPdf').onclick=()=>{if(!check())return;const d=get();$('dsum').innerHTML=sumHtml(d);if($('dlg').showModal)$('dlg').showModal();else if(confirm('¿Total '+mx(num(d.total))+' MXN correcto?'))doPrint()};
 $('dno').onclick=()=>$('dlg').close();
@@ -242,7 +250,6 @@ $('imgSize').onchange=()=>{cur.imgSize=normSize($('imgSize').value);render();dra
 $('despieceSize').onchange=()=>{cur.despieceSize=normSize($('despieceSize').value);render();draft()};
 $('bImg').onclick=()=>{cur.img='';$('img').value='';render();draft()};
 $('bImgDespiece').onclick=()=>{cur.despiece='';$('imgDespiece').value='';render();draft()};
-/* ---- Recortador ---- */
 const cropCtx={field:null,img:null,sx:0,sy:0,ex:0,ey:0,dragging:false};
 function openCrop(field){
   const src=field==='img'?cur.img:cur.despiece;
@@ -310,7 +317,6 @@ $('cropApply').onclick=()=>{
   $('cropDlg').close();
   render();draft();toast('Recorte aplicado.');
 };
-/* ---- Fin recortador ---- */
 $('bCropImg').onclick=()=>openCrop('img');
 $('bCropDespiece').onclick=()=>openCrop('despiece');
 $('errs').onclick=e=>{const f=e.target.dataset&&e.target.dataset.f;if(f){$(f).scrollIntoView({block:'center'});$(f).focus()}};
