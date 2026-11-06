@@ -40,7 +40,9 @@ dl{margin:8px 0}dt{font-size:12px;color:#666}dd{margin:0 0 6px;font-weight:600}
 .bl{padding:12px 20px;border-bottom:1px solid var(--line);break-inside:avoid;overflow-wrap:anywhere}
 .bl h3{font:600 14px Georgia,serif;color:var(--wood2);margin:0 0 6px}
 .g{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
-.doc img{display:block;width:100%;max-height:420px;object-fit:cover}
+.imgs{display:flex;justify-content:center;align-items:flex-start}
+.img-box{max-width:100%;text-align:center}
+.img-box img{display:block;max-width:100%;max-height:260px;width:auto;height:auto;margin:0 auto;object-fit:contain;border:1px solid var(--line);border-radius:4px;background:#faf8f5}
 .doc ul{margin:0;padding:0;list-style:none}.doc li{padding:1px 0 1px 18px;position:relative}
 .doc li::before{content:"✓";position:absolute;left:0;color:var(--wood2)}
 .row{display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-bottom:1px dotted var(--line)}
@@ -49,7 +51,7 @@ dl{margin:8px 0}dt{font-size:12px;color:#666}dd{margin:0 0 6px;font-weight:600}
 .sg{display:flex;gap:24px;padding:36px 20px 16px;break-inside:avoid}
 .sg div{flex:1;border-top:1px solid var(--ink);text-align:center;font-size:12px;padding-top:4px}
 .mu{color:#777;font-size:12px}
-@media print{.doc img{max-height:230px}.bl{padding:8px 20px}.sg{padding-top:24px}body{background:#fff}.ui,.bar,#toast{display:none!important}.app{display:block;padding:0}.doc{border:0;max-width:none}@page{size:A4;margin:10mm}}
+@media print{.doc .img-box img{max-height:170px}.bl{padding:8px 20px}.sg{padding-top:24px}body{background:#fff}.ui,.bar,#toast{display:none!important}.app{display:block;padding:0}.doc{border:0;max-width:none}@page{size:A4;margin:10mm}}
 </style></head><body>
 <div class="bar ui"><b>MUEBLES MARTÍNEZ</b>
 <button id="bSave">Guardar</button><button id="bCopy">Copiar texto</button><button id="bPdf" class="p">Exportar PDF</button><button id="bNew">Nueva</button></div>
@@ -64,7 +66,9 @@ dl{margin:8px 0}dt{font-size:12px;color:#666}dd{margin:0 0 6px;font-weight:600}
 <label style="display:flex;gap:8px;align-items:center"><input id="multi" type="checkbox" style="width:auto;margin:0">Cotizar varios muebles</label>
 <div id="mlist"></div><button id="bAdd" hidden style="margin-top:8px">+ Agregar otro mueble</button>
 <label>Render o foto<input id="img" type="file" accept="image/*"></label>
-<button id="bImg" hidden style="margin-top:6px">Quitar imagen</button></section>
+<button id="bImg" hidden style="margin-top:6px">Quitar render</button>
+<label>Despiece del mueble<input id="imgDespiece" type="file" accept="image/*"></label>
+<button id="bImgDespiece" hidden style="margin-top:6px">Quitar despiece</button></section>
 <section><h2>Contenido</h2><p class="hint">Un elemento por línea.</p>
 <label>Herrajes incluidos<textarea id="herr"></textarea></label>
 <label>Notas<textarea id="nota"></textarea></label></section>
@@ -98,7 +102,8 @@ const mx=n=>'$'+Math.round(n).toLocaleString('en-US');
 const cm=n=>String(+Number(n).toFixed(1));
 const vdate=s=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return false;const[y,m,d]=s.split('-').map(Number),x=new Date(y,m-1,d);return x.getFullYear()===y&&x.getMonth()===m-1&&x.getDate()===d&&y>=2000&&y<=2100};
 const fdate=(s,add)=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d+(add||0)).toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'})};
-let cur={id:null,folio:null,img:''},shown=false,tt;
+let cur={id:null,folio:null,img:'',despiece:''},shown=false,tt;
+const isImg=v=>typeof v==='string'&&/^data:image\/(jpeg|png);/.test(v);
 const gm=()=>[...document.querySelectorAll('.mb')].map(b=>({t:b.querySelector('.mt').value,m:b.querySelector('.mm').value,x:b.querySelector('.mx').value,d:b.querySelector('.md').value}));
 const get=()=>{const o={};F.forEach(i=>o[i]=$(i).value);o.multi=$('multi').checked;o.muebles=gm();return o};
 const sm=a=>a.slice(0,MAX).map(x=>({t:MT.includes(x&&x.t)?x.t:MT[0],m:String(x&&x.m||''),x:String(x&&x.x||''),d:String(x&&x.d||'')}));
@@ -107,7 +112,7 @@ const m=[1,2,3].map(i=>o['s'+i+'v']?((o['s'+i+'n']||'Lado '+i)+' '+o['s'+i+'v']+
 return Object.assign({},o,{muebles:[{t:o.tipo,m:m,x:o.mats,d:o.det}],multi:false})}
 function rows(ms){const mu=$('multi').checked;$('mlist').innerHTML=ms.map((m,i)=>'<div class="mb"><div class="r2"><label>'+(mu?'Mueble '+(i+1):'Tipo')+'<select id="m'+i+'t" class="mt">'+MT.map(t=>'<option'+(t===m.t?' selected':'')+'>'+t+'</option>').join('')+'</select></label><label>Medidas *<input id="m'+i+'m" class="mm" maxlength="100" placeholder="Ej. 306 × 308 cm" value="'+esc(m.m)+'"></label></div><label>Materiales *<textarea id="m'+i+'x" class="mx">'+esc(m.x)+'</textarea></label><label>Detalles<textarea id="m'+i+'d" class="md" placeholder="Ej. Tarja a la izquierda">'+esc(m.d)+'</textarea></label>'+(mu&&ms.length>1?'<button class="mdel" data-i="'+i+'">Quitar mueble '+(i+1)+'</button>':'')+'</div>').join('');$('bAdd').hidden=!mu||ms.length>=MAX}
 function setForm(o){o=mig(o);const b=D();F.forEach(i=>{const e=$(i);e.value=o[i]!=null?String(o[i]):b[i];if(e.tagName==='SELECT'&&!e.value)e.value=b[i]});const ms=sm(o.muebles);$('multi').checked=ms.length>1||o.multi===true;rows(ms)}
-function setCur(r){cur={id:r&&r.id||null,folio:r&&r.folio||null,img:r&&typeof r.img==='string'&&/^data:image\/(jpeg|png);/.test(r.img)?r.img:''}}
+function setCur(r){cur={id:r&&r.id||null,folio:r&&r.folio||null,img:r&&isImg(r.img)?r.img:'',despiece:r&&isImg(r.despiece)?r.despiece:''}}
 function toast(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,3500)}
 function validate(d){const e=[],p=(i,m)=>e.push([i,m]);
 if(d.cli.trim().length<2)p('cli','Escribe el nombre del cliente.');
@@ -125,36 +130,39 @@ const a=Math.round(t*p/100),r=t-a;
 if(p===100)return'Pago único de '+mx(t)+' al autorizar.';if(p===0)return'Pago de '+mx(t)+' contra entrega e instalación.';
 return'Anticipo '+p+'%: '+mx(a)+' al autorizar. Saldo: '+mx(r)+' contra entrega e instalación.'}
 const li=s=>list(s).map(x=>'<li>'+esc(x)+'</li>').join('');
+const imgBlock=(src,alt,title)=>'<div class="bl"><h3>'+title+'</h3><div class="imgs"><div class="img-box"><img src="'+esc(src)+'" alt="'+esc(alt)+'"></div></div></div>';
 function doc(d){const t=num(d.total),okT=Number.isInteger(t)&&t>0,ok=vdate(d.fecha),v=num(d.vig),dd=num(d.dias),g=num(d.gar),N=d.muebles.length;
 const mb=d.muebles.map((m,i)=>'<div class="bl"><h3>'+(N>1?(i+1)+'. ':'')+esc(m.t)+'</h3><div class="row"><span>Medidas</span><b>'+esc(m.m.trim()||'—')+'</b></div>'+(list(m.x).length?'<div class="mu" style="margin-top:6px">Materiales</div><ul>'+li(m.x)+'</ul>':'')+(list(m.d).length?'<div class="mu" style="margin-top:6px">Detalles</div><ul>'+li(m.d)+'</ul>':'')+'</div>').join('');
 return'<div class="dh"><div class="wm">MUEBLES MARTÍNEZ<small>CALIDAD · DISEÑO · PERSONALIZACIÓN</small></div><div class="meta"><b>Folio: '+esc(cur.folio||'se asigna al guardar')+'</b><br>Fecha: '+(ok?fdate(d.fecha):'—')+'<br>Vigencia: '+(ok&&Number.isInteger(v)&&v>0?'hasta el '+fdate(d.fecha,v):'—')+'</div></div>'
 +'<div class="ti">Cotización – '+esc([...new Set(d.muebles.map(m=>m.t))].join(', '))+'</div>'
 +'<div class="bl"><h3>Cliente</h3><div>'+esc(d.cli.trim()||'—')+'</div>'+(d.tel.trim()?'<div>Tel. '+esc(d.tel.trim())+'</div>':'')+(d.dir.trim()?'<div>'+esc(d.dir.trim())+'</div>':'')+'</div>'
-+(cur.img?'<img src="'+esc(cur.img)+'" alt="Render del proyecto">':'')+mb
++(cur.img?imgBlock(cur.img,'Render del proyecto','Render'):'')
++mb
 +(list(d.herr).length?'<div class="bl"><h3>Herrajes incluidos</h3><ul>'+li(d.herr)+'</ul></div>':'')
 +'<div class="bl"><h3>Tiempo estimado</h3>'+(Number.isInteger(dd)&&dd>0?dd+' días hábiles de fabricación e instalación':'—')+'</div>'
 +'<div class="tot"><small>Inversión total</small><b>'+(okT?mx(t)+' MXN':'$ —')+'</b><small>'+(d.iva==='mas'?'Más IVA':'IVA incluido')+'</small></div>'
 +'<div class="bl"><h3>Forma de pago</h3>'+esc(pay(d)||'—')+(d.gar.trim()&&Number.isInteger(g)&&g>0?'<br>Garantía: '+g+(g===1?' mes.':' meses.'):'')+'</div>'
 +(list(d.nota).length?'<div class="bl"><h3>Notas</h3><ul>'+li(d.nota)+'</ul></div>':'')
++(cur.despiece?imgBlock(cur.despiece,'Despiece del mueble','Despiece'):'')
 +'<div class="sg"><div>Muebles Martínez</div><div>Cliente · Acepto la cotización</div></div>'}
 function render(){const d=get();
-$('doc').innerHTML=doc(d);$('bImg').hidden=!cur.img;
+$('doc').innerHTML=doc(d);$('bImg').hidden=!cur.img;$('bImgDespiece').hidden=!cur.despiece;
 document.querySelectorAll('.bad').forEach(e=>e.classList.remove('bad'));const eb=$('errs');
 if(shown){const e=validate(d);e.forEach(x=>{const f=$(x[0]);if(f)f.classList.add('bad')});eb.hidden=!e.length;eb.innerHTML=e.length?'<b>Corrige estos datos:</b><ul>'+e.map(x=>'<li data-f="'+x[0]+'">'+esc(x[1])+'</li>').join('')+'</ul>':''}else eb.hidden=true}
-let dt;function draft(){clearTimeout(dt);dt=setTimeout(()=>{const o={d:get(),id:cur.id,folio:cur.folio,img:cur.img};if(!ls.set(DR,o)){o.img='';ls.set(DR,o)}},400)}
+let dt;function draft(){clearTimeout(dt);dt=setTimeout(()=>{const o={d:get(),id:cur.id,folio:cur.folio,img:cur.img,despiece:cur.despiece};if(!ls.set(DR,o)){o.img='';o.despiece='';ls.set(DR,o)}},400)}
 const load=()=>{const a=ls.get(K,[]);return Array.isArray(a)?a.filter(r=>r&&typeof r==='object'&&r.id):[]};
 function hist(){const a=load();$('hist').innerHTML=a.length?a.map(r=>{const t=num(r.d&&r.d.total);return'<div class="hi"><span><b>'+esc(r.folio)+'</b> · '+esc(r.d&&r.d.cli)+'<br>'+(Number.isInteger(t)?mx(t):'')+'</span><button data-a="open" data-id="'+esc(r.id)+'">Abrir</button><button data-a="dup" data-id="'+esc(r.id)+'">Duplicar</button><button data-a="del" data-id="'+esc(r.id)+'">Borrar</button></div>'}).join(''):'<p class="mu">Aún no hay cotizaciones guardadas.</p>'}
 function save(){const a=load(),d=get();
 if(!cur.id){let m=0;a.forEach(r=>{const x=/-(\d+)$/.exec(r.folio||'');if(x)m=Math.max(m,+x[1])});cur.id=Date.now()+'-'+Math.random().toString(36).slice(2,6);cur.folio='MM-'+new Date().getFullYear()+'-'+String(m+1).padStart(3,'0')}
-const r={id:cur.id,folio:cur.folio,d:d,img:cur.img,ts:Date.now()},i=a.findIndex(x=>x.id===r.id);
+const r={id:cur.id,folio:cur.folio,d:d,img:cur.img,despiece:cur.despiece,ts:Date.now()},i=a.findIndex(x=>x.id===r.id);
 if(i>=0)a[i]=r;else a.unshift(r);
-let ok=ls.set(K,a),lost=false;if(!ok&&r.img){r.img='';lost=true;ok=ls.set(K,a);if(ok)toast('Guardada sin la imagen: el espacio está lleno.')}
+let ok=ls.set(K,a),lost=false;if(!ok&&(r.img||r.despiece)){r.img='';r.despiece='';lost=true;ok=ls.set(K,a);if(ok)toast('Guardada sin imágenes: el espacio está lleno.')}
 if(!ok){toast('No se pudo guardar en este navegador. Exporta el PDF de todos modos.')}
 render();hist();draft();return ok&&!lost}
 function check(){shown=true;const e=validate(get());render();if(e.length){toast('Corrige '+e.length+' dato(s) marcados.');const f=$(e[0][0]);f.scrollIntoView({block:'center'});f.focus();return false}return true}
 function sumHtml(d){const t=num(d.total),w=[];if(t<3000)w.push('El total parece bajo. ¿Faltan ceros?');if(t>1000000)w.push('El total parece alto. ¿Sobran ceros?');
 const sd=d.muebles.map(m=>esc(m.t)+' — '+esc(m.m.trim())).join('<br>');
-return'<dl><dt>Cliente</dt><dd>'+esc(d.cli)+'</dd><dt>Proyecto</dt><dd>'+sd+'</dd><dt>Inversión total</dt><dd style="font-size:22px">'+mx(t)+' MXN ('+(d.iva==='mas'?'más IVA':'IVA incluido')+')</dd><dt>Pago</dt><dd>'+esc(pay(d))+'</dd><dt>Entrega</dt><dd>'+num(d.dias)+' días hábiles</dd></dl>'+w.map(x=>'<div class="warn">'+x+'</div>').join('')}
+return'<dl><dt>Cliente</dt><dd>'+esc(d.cli)+'</dd><dt>Proyecto</dt><dd>'+sd+'</dd><dt>Inversión total</dt><dd style="font-size:22px">'+mx(t)+' MXN ('+(d.iva==='mas'?'más IVA':'IVA incluido')+')</dd><dt>Pago</dt><dd>'+esc(pay(d))+'</dd><dt>Entrega</dt><dd>'+num(d.dias)+' días hábiles</dd>'+(cur.img?'<dt>Render</dt><dd>Sí</dd>':'')+(cur.despiece?'<dt>Despiece</dt><dd>Sí</dd>':'')+'</dl>'+w.map(x=>'<div class="warn">'+x+'</div>').join('')}
 function doPrint(){const d=get();save();const old=document.title;document.title=(cur.folio||'Cotizacion')+' '+d.cli.trim().replace(/[\\/:*?"<>|]/g,'');window.onafterprint=()=>{document.title=old};window.print();setTimeout(()=>{document.title=old},4000)}
 $('bPdf').onclick=()=>{if(!check())return;const d=get();$('dsum').innerHTML=sumHtml(d);if($('dlg').showModal)$('dlg').showModal();else if(confirm('¿Total '+mx(num(d.total))+' MXN correcto?'))doPrint()};
 $('dno').onclick=()=>$('dlg').close();
@@ -167,15 +175,20 @@ $('bNew').onclick=()=>{const d=get();if((d.cli.trim()||d.total)&&!confirm('¿Emp
 $('bAdd').onclick=()=>{const ms=gm();if(ms.length>=MAX)return;ms.push({t:'Closet',m:'',x:'',d:''});rows(ms);render();draft();$('m'+(ms.length-1)+'m').focus()};
 $('mlist').onclick=e=>{const b=e.target.closest('.mdel');if(!b)return;const ms=gm(),i=+b.dataset.i;if(!confirm('¿Quitar el mueble '+(i+1)+'?'))return;ms.splice(i,1);rows(ms);render();draft()};
 $('multi').onchange=()=>{const ms=gm();if(!$('multi').checked&&ms.length>1){if(!confirm('Se quitarán los muebles 2 a '+ms.length+'. ¿Continuar?')){$('multi').checked=true;return}ms.length=1}rows(ms);render();draft()};
-$('bImg').onclick=()=>{cur.img='';$('img').value='';render();draft()};
-$('img').onchange=e=>{const f=e.target.files[0];if(!f)return;if(!/^image\//.test(f.type)){toast('Elige un archivo de imagen.');e.target.value='';return}
+function handleImg(e,field){
+const f=e.target.files[0];if(!f)return;
+if(!/^image\//.test(f.type)){toast('Elige un archivo de imagen.');e.target.value='';return}
 const u=URL.createObjectURL(f),im=new Image();
-im.onload=()=>{try{const s=Math.min(1,1000/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);cur.img=c.toDataURL('image/jpeg',.78);render();draft()}catch(er){toast('No se pudo procesar la imagen.')}URL.revokeObjectURL(u);e.target.value=''};
-im.onerror=()=>{URL.revokeObjectURL(u);toast('No se pudo leer la imagen.');e.target.value=''};im.src=u};
+im.onload=()=>{try{const s=Math.min(1,1000/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);cur[field]=c.toDataURL('image/jpeg',.78);render();draft()}catch(er){toast('No se pudo procesar la imagen.')}URL.revokeObjectURL(u);e.target.value=''};
+im.onerror=()=>{URL.revokeObjectURL(u);toast('No se pudo leer la imagen.');e.target.value=''};im.src=u}
+$('img').onchange=e=>handleImg(e,'img');
+$('imgDespiece').onchange=e=>handleImg(e,'despiece');
+$('bImg').onclick=()=>{cur.img='';$('img').value='';render();draft()};
+$('bImgDespiece').onclick=()=>{cur.despiece='';$('imgDespiece').value='';render();draft()};
 $('errs').onclick=e=>{const f=e.target.dataset&&e.target.dataset.f;if(f){$(f).scrollIntoView({block:'center'});$(f).focus()}};
 $('hist').onclick=e=>{const b=e.target.closest('button');if(!b)return;const a=load(),r=a.find(x=>x.id===b.dataset.id);if(!r)return;
 if(b.dataset.a==='open'){setCur(r);setForm(r.d);shown=false;render();draft();scrollTo(0,0)}
-else if(b.dataset.a==='dup'){setCur({img:r.img});setForm(Object.assign({},r.d,{fecha:today()}));shown=false;render();draft();toast('Copia lista. Se guardará con folio nuevo.');scrollTo(0,0)}
+else if(b.dataset.a==='dup'){setCur({img:r.img,despiece:r.despiece});setForm(Object.assign({},r.d,{fecha:today()}));shown=false;render();draft();toast('Copia lista. Se guardará con folio nuevo.');scrollTo(0,0)}
 else if(b.dataset.a==='del'&&confirm('¿Borrar la cotización '+r.folio+'?')){ls.set(K,a.filter(x=>x.id!==r.id));if(cur.id===r.id){cur.id=null;cur.folio=null}hist();render();draft()}};
 $('side').addEventListener('input',()=>{render();draft()});$('side').addEventListener('change',()=>{render();draft()});
 const dr=ls.get(DR,null);if(dr&&dr.d&&typeof dr.d==='object'){setCur(dr);setForm(dr.d)}else setForm(D());
